@@ -97,8 +97,36 @@ def _render_triangle(events, n_samples: int, sr: int,
     return out
 
 
+_LFSR_CYCLE = None
+
+
+def _lfsr_cycle() -> np.ndarray:
+    """One full 32767-step cycle of the 15-bit NES LFSR, computed once.
+
+    The 2A03 noise LFSR (feedback = bit0 XOR bit1) is maximal-length, so
+    from any non-zero seed the output repeats every 32767 steps. Caching a
+    single cycle and tiling it turns long drum tracks from a Python loop
+    into a memcpy.
+    """
+    global _LFSR_CYCLE
+    if _LFSR_CYCLE is None:
+        n = 0x7FFF
+        bits = np.empty(n, dtype=np.uint8)
+        reg = 1
+        for i in range(n):
+            bits[i] = reg & 1
+            fb = (reg ^ (reg >> 1)) & 1
+            reg = (reg >> 1) | (fb << 14)
+        _LFSR_CYCLE = bits
+    return _LFSR_CYCLE
+
+
 def _lfsr_bits(n_steps: int, seed: int = 1) -> np.ndarray:
     """15-bit NES LFSR: feedback = bit0 XOR bit1."""
+    if seed == 1:
+        cycle = _lfsr_cycle()
+        reps = (n_steps + len(cycle) - 1) // len(cycle)
+        return np.tile(cycle, reps)[:n_steps]
     bits = np.empty(n_steps, dtype=np.uint8)
     reg = seed & 0x7FFF or 1
     for i in range(n_steps):
