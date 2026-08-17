@@ -4,3 +4,8 @@ LakhNES/data/nesmdb_tx2/
 venv/
 *.wav
 __pycache__/
+
+# nesgpt artifacts
+nesgpt/data/
+nesgpt/out/
+generated/

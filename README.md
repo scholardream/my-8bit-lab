@@ -50,8 +50,26 @@ lua bytebeat/bytebeat.lua --preset 1 out.wav      # 内置 5 个经典公式
 - **60Hz 琶音**：NES 只有一个声道发一个音，真实作曲家用帧率级轮询
   假装和弦——这里自动做同样的事
 
+## nesgpt — nanoGPT 风格的 NES-MDB 训练
+
+让 AI 自己写 8-bit 音乐的最小实现：用 nanoGPT 风格的 decoder-only
+Transformer，在 NES-MDB 的 TX1 事件序列上做语言建模。只依赖 PyTorch +
+numpy，不再需要 LakhNES 那套 2019 年的旧环境。详见 [`nesgpt/README.md`](nesgpt/README.md)。
+
+```bash
+pip install torch                     # 训练前另装 torch（Python 3.13 → torch>=2.6）
+python -m nesgpt.prepare              # TX1 -> token 二进制
+python -m nesgpt.train --device cpu   # 训练（小模型 CPU 即可跑通）
+python -m nesgpt.sample --ckpt nesgpt/out/ckpt.pt --out_dir generated
+python -m nesgpt.tx1_render generated/0.tx1.txt -o generated/0.wav   # 试听
+```
+
 ## 路线图
 
-下一步：nanoGPT 在 NES-MDB 数据集上训练，让 AI 自己写 8-bit 音乐。
+- [x] `chiptunify`：任意 MIDI → NES 8-bit 音乐
+- [x] `bytebeat`：单公式音乐
+- [x] `nesgpt`：nanoGPT 在 NES-MDB 上的训练骨架（数据 → 训练 → 采样 → 合成闭环）
+- [ ] 用 GPU 训一个像样的模型，让 AI 真正写出好听的 8-bit 音乐
+
 （`LakhNES/` 是 chrisdonahue/LakhNES 的镜像——在 NES-MDB 上用 Transformer
 生成任天堂音乐的先驱工作，致敬。）
